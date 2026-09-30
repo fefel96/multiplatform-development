@@ -1,0 +1,6 @@
+/build/
+/workspaces/
+**/.vs/
+**/obj/
+*.vcxproj.user
+*.suo
