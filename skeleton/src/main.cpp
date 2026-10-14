@@ -32,6 +32,25 @@ int main()
 	 * but you can also use `Initialize` methods when it makes sense for your implementation.
 	 */
 	InputSystem input;
+	const Input::GamepadButtons buttons[] =
+	{
+		Input::GamepadButtons::FACE_BUTTON_TOP,
+		Input::GamepadButtons::FACE_BUTTON_DOWN,
+		Input::GamepadButtons::FACE_BUTTON_LEFT,
+		Input::GamepadButtons::FACE_BUTTON_RIGHT,
+		Input::GamepadButtons::DPAD_TOP,
+		Input::GamepadButtons::DPAD_DOWN,
+		Input::GamepadButtons::DPAD_LEFT,
+		Input::GamepadButtons::DPAD_RIGHT,
+		Input::GamepadButtons::SHOULDER_LEFT,
+		Input::GamepadButtons::SHOULDER_RIGHT
+	};
+	const char* buttonNames[] = { "Y", "A", "X", "B", "Up", "Down", "Left", "Right", "LB", "RB" };
+	const size_t buttonCount = sizeof( buttons ) / sizeof( buttons[0] );
+	bool previousButtonStates[sizeof( buttons ) / sizeof( buttons[0] )] = {};
+	bool previousConnectionState = false;
+	bool hasPrintedInputState = false;
+	std::printf("Controller: waiting for input (Ctrl+C to quit)\n");
 
 	// @note - lukas.vogl - Pseudo "game-loop" to simulate we are doing something (will ne necessary for further milestones)
 	float passedGameTime = 0.0f;
@@ -40,9 +59,40 @@ int main()
 	{
 		input.Update();
 
+		const bool connected = input.IsGamepadConnected();
+		bool currentButtonStates[sizeof( buttons ) / sizeof( buttons[0] )] = {};
+		bool inputStateChanged = !hasPrintedInputState || connected != previousConnectionState;
+		for ( size_t i = 0; i < buttonCount; ++i )
+		{
+			currentButtonStates[i] = input.QueryGamepadButtonState( buttons[i], Input::InputAction::BUTTON_HOLD );
+			if ( currentButtonStates[i] != previousButtonStates[i] )
+			{
+				inputStateChanged = true;
+			}
+		}
+
+		if ( inputStateChanged )
+		{
+			std::printf("\rController: %s | ", connected ? "CONNECTED" : "DISCONNECTED");
+			for ( size_t i = 0; i < buttonCount; ++i )
+			{
+				std::printf("%s:%s%s", buttonNames[i], currentButtonStates[i] ? "ON " : "off",
+					i + 1 == buttonCount ? "" : " ");
+			}
+			std::printf("  ");
+			std::fflush(stdout);
+			for ( size_t i = 0; i < buttonCount; ++i )
+			{
+				previousButtonStates[i] = currentButtonStates[i];
+			}
+			previousConnectionState = connected;
+			hasPrintedInputState = true;
+		}
+
 		// @note - lukas.vogl - We want to exit the game when the right button on the gamepad face is pressed ( B on XBox controllers, Circle on Dualshocks )
 		if ( input.QueryGamepadButtonState( Input::GamepadButtons::FACE_BUTTON_RIGHT, Input::InputAction::BUTTON_PRESSED ) )
 		{
+			std::printf("\nB/Circle pressed; exiting.\n");
 			shouldExitGame = true;
 		}
 
@@ -63,5 +113,5 @@ int main()
 		passedGameTime = clock.ToMilliseconds();
 	}
 
-	printf("Shutting dow ...\n");
+	printf("Shutting down ...\n");
 }
